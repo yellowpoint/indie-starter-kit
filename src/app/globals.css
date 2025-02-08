@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 39 29% 95%; /* #F7EEDD */
+    --foreground: 0 0% 0%; /* #000000 */
+
+    --card: 39 29% 95%; /* #F7EEDD */
+    --card-foreground: 0 0% 0%; /* #000000 */
+
+    --popover: 39 29% 95%; /* #F7EEDD */
+    --popover-foreground: 0 0% 0%; /* #000000 */
+
+    --primary: 16 100% 65%; /* #FF7F50 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 39 41% 88%; /* #ede4d3 */
+    --secondary-foreground: 0 0% 17%; /* #2c2c2c */
+
+    --muted: 39 41% 88%; /* #ede4d3 */
+    --muted-foreground: 0 0% 17%; /* #2c2c2c */
+
+    --accent: 20 47% 61%; /* #cb936b */
+    --accent-foreground: 37 100% 80%; /* #ffd299 */
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 39 24% 72%; /* #c4bcab */
+    --input: 39 24% 72%; /* #c4bcab */
+    --ring: 16 100% 65%; /* #FF7F50 */
+    --radius: 0.5rem;
+    /* Chart colors */
+    --chart-1: 16 100% 65%; /* #FF7F50 */
+    --chart-2: 16 67% 54%; /* #dd6236 */
+    --chart-3: 16 100% 28%; /* #8f1e00 */
+    --chart-4: 25 100% 27%; /* #8B4513 */
+    --chart-5: 37 100% 80%; /* #ffd299 */
+  }
+
+  .dark {
+    --background: 30 20% 10%; /* 深褐色背景 */
+    --foreground: 30 15% 90%; /* 浅褐色文字 */
+
+    --card: 30 20% 12%;
+    --card-foreground: 30 15% 90%;
+    --popover: 30 20% 12%;
+    --popover-foreground: 30 15% 90%;
+
+    --primary: 25 90% 60%; /* 明亮的橙色 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 25 30% 25%;
+    --secondary-foreground: 25 90% 60%;
+
+    --muted: 25 30% 25%;
+    --muted-foreground: 30 15% 70%;
+
+    --accent: 35 80% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 30 20% 20%;
+    --input: 30 20% 20%;
+    --ring: 25 90% 60%;
+
+    --chart-1: 25 90% 60%; /* 明亮的橙色 */
+    --chart-2: 35 80% 50%; /* 金色 */
+    --chart-3: 15 70% 50%; /* 深橙色 */
+    --chart-4: 45 70% 50%; /* 琥珀色 */
+    --chart-5: 30 15% 90%; /* 浅褐色 */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// 在这里添加你的数据模型 
+model AiHistory {
+  id        String   @id @default(uuid())
+  promptKey String?
+  prompt    String?
+  content   String?
+  imageUrl  String?
+  response  String?
+  model     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Prompt {
+  id            String   @id @default(uuid())
+  name          String   @unique // Prompt 名称
+  promptContent String // Prompt 具体内容
+  promptType    String   @default("dynamic") // static 或 dynamic，默认 dynamic
+  llm           String?  @default("") // LLM 模型
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  name      String
+  type      String // 文档类型(pdf, doc等)
+  chunks    Chunk[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Chunk {
+  id         String   @id @default(uuid())
+  content    String
+  embedding  Bytes // 存储向量嵌入
+  document   Document @relation(fields: [documentId], references: [id])
+  documentId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
