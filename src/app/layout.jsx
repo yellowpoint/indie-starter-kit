@@ -20,19 +20,40 @@ const geistMono = localFont({
 });
 
 export const metadata = {
-  title: "跨越不可能",
-  description: "跨越不可能",
+  title: "独立开发启动器 | 48小时从0到1",
+  description: "帮助独立开发者快速启动项目的工具集,包含心态指南、策略库、项目灵感、工具包和进度追踪",
   icons: [
     {
       rel: "icon",
-      url: "/favicon.svg",  // 改用 SVG 格式
+      url: "/favicon.svg",
       type: "image/svg+xml"
     },
     {
-      rel: "apple-touch-icon", // 用于 iOS 设备的图标
+      rel: "apple-touch-icon",
       url: "/apple-touch-icon.png"
     }
   ],
+  openGraph: {
+    title: "独立开发启动器",
+    description: "48小时从0到1启动你的独立开发之旅",
+    url: "https://indie-starter.vercel.app",
+    siteName: "独立开发启动器",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "zh_CN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "独立开发启动器",
+    description: "48小时从0到1启动你的独立开发之旅",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -44,7 +65,7 @@ export default function RootLayout({ children }) {
             <AppSidebar />
             <SidebarInset>
               <Header className="h-16" />
-              <main className="h-[calc(100vh-4rem)]">
+              <main className="h-[calc(100vh-4rem)] overflow-auto">
                 {children}
               </main>
               <Toaster />

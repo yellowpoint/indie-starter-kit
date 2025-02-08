@@ -29,6 +29,10 @@ import {
   Leaf,
   Compass,
   Battery,
+  Rocket,
+  Lightbulb,
+  Wrench,
+  CheckSquare,
 } from "lucide-react";
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
@@ -73,20 +77,40 @@ export const data = {
   ],
   navMain: [
     {
-      title: "目标",
-      icon: Target,
+      title: "独立开发启动器",
+      url: "/indie-starter",
+      icon: Rocket,
       items: [
         {
-          title: "学习助手",
-          url: "/goals/learning-assistant",
-          icon: Bot,
+          title: "心态指南",
+          url: "/indie-starter/mindset",
+          icon: Brain,
+          description: "调整心态,建立正确的独立开发思维模式"
         },
         {
-          title: "心流快乐",
-          url: "/goals/flow-happiness",
-          icon: Heart,
+          title: "策略库",
+          url: "/indie-starter/strategy",
+          icon: Lightbulb,
+          description: "验证想法,找到适合的切入点"
         },
-
+        {
+          title: "项目灵感库",
+          url: "/indie-starter/ideas",
+          icon: Sparkles,
+          description: "发现机会,获取可执行的项目思路"
+        },
+        {
+          title: "工具包",
+          url: "/indie-starter/toolkit",
+          icon: Wrench,
+          description: "快速开发,降低启动门槛"
+        },
+        {
+          title: "进度追踪",
+          url: "/indie-starter/progress",
+          icon: CheckSquare,
+          description: "48小时行动清单"
+        }
       ]
     },
     {
@@ -113,101 +137,6 @@ export const data = {
           url: "/ai-playground",
           icon: Gamepad2,
         },
-      ],
-    },
-    {
-      title: "心流",
-      icon: Activity,
-      items: [
-        {
-          title: "心流系统",
-          url: "/flow/overview",
-          icon: Target,
-        },
-        {
-          title: "为什么不快乐",
-          url: "/flow/why-not-happy",
-          icon: Heart,
-        },
-        {
-          title: "控制意识",
-          url: "/flow/consciousness",
-          icon: Brain,
-        },
-        {
-          title: "心流要素",
-          url: "/flow/flow-elements",
-          icon: Target,
-        },
-        {
-          title: "如何找目标",
-          url: "/flow/find-target",
-          icon: Compass,
-        },
-      ],
-    },
-    {
-      title: "中国哲学",
-      icon: BookOpen,
-      items: [
-        {
-          title: "阳明心学",
-          url: "/philosophy/yangming",
-          icon: Compass,
-        },
-      ],
-    },
-    {
-      title: "快乐",
-      icon: Heart,
-      items: [
-        {
-          title: "快乐系统",
-          url: "/happy/happiness",
-          icon: Heart,
-        },
-        {
-          title: "好心情清单",
-          url: "/happy/happy-list",
-          icon: Sparkles,
-        },
-        {
-          title: "多巴胺恢复",
-          url: "/happy/dopamine",
-          icon: Zap,
-        }
-      ]
-    },
-    {
-      title: "其他",
-      icon: MoreHorizontal,
-      items: [
-        {
-          title: "职业倦怠",
-          url: "/burnout",
-          icon: Battery,
-        },
-        {
-          title: "有意义的工作",
-          url: "/meaningful-work",
-          icon: Briefcase,
-        },
-
-        {
-          title: "人生不必太用力",
-          url: "/flow/not-too-hard",
-          icon: Leaf,
-        },
-        {
-          title: "人生设计",
-          url: "/life-design",
-          icon: Compass,
-        },
-        {
-          title: "我的人生设计",
-          url: "/my-life-design",
-          icon: Target,
-        }
       ],
     },
   ],
@@ -251,16 +180,16 @@ export function AppSidebar({
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader className="relative">
+      {/* <SidebarHeader className="relative">
         <TeamSwitcher teams={data.teams} />
-      </SidebarHeader>
+      </SidebarHeader> */}
       <SidebarContent>
         <NavMain items={navMainWithActive} />
         {/* <NavProjects projects={data.projects} /> */}
       </SidebarContent>
-      <SidebarFooter className="relative">
+      {/* <SidebarFooter className="relative">
         <NavUser user={data.user} />
-      </SidebarFooter>
+      </SidebarFooter> */}
       <SidebarRail />
     </Sidebar>
   )
