@@ -96,12 +96,12 @@ export const data = {
           icon: ListTodo,
           description: "按步骤执行项目开发"
         },
-        {
-          title: "功能规划",
-          url: "/indie/plan",
-          icon: FileText,
-          description: "详细的功能分解与规划"
-        },
+        // {
+        //   title: "功能规划",
+        //   url: "/indie/plan",
+        //   icon: FileText,
+        //   description: "详细的功能分解与规划"
+        // },
         {
           title: "项目管理",
           url: "/indie/projects",

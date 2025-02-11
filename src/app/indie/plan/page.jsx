@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,15 +15,85 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { featureStorage, taskStorage, projectStorage } from "@/lib/storage";
+import { toast } from "sonner";
 
 export default function PlanPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const projectId = searchParams.get("id");
+
+  const [project, setProject] = useState(null);
   const [features, setFeatures] = useState([]);
   const [newFeature, setNewFeature] = useState("");
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [newSubTask, setNewSubTask] = useState("");
   const [subTasks, setSubTasks] = useState({});
 
-  const addFeature = () => {
+  // 加载项目数据
+  useEffect(() => {
+    const loadProject = async () => {
+      try {
+        if (!projectId) {
+          // 如果没有项目 ID，尝试获取当前项目
+          const currentProject = await projectStorage.getCurrentProject();
+          if (!currentProject) {
+            // 如果没有当前项目，返回项目列表
+            router.push("/indie/projects");
+            return;
+          }
+          setProject(currentProject);
+          return;
+        }
+
+        // 根据 ID 获取项目
+        const projectData = await projectStorage.getProject(projectId);
+        if (!projectData) {
+          toast.error("项目不存在");
+          router.push("/indie/projects");
+          return;
+        }
+        setProject(projectData);
+
+        // 加载项目的功能特性
+        const savedFeatures = await featureStorage.getAll(projectId);
+        setFeatures(savedFeatures);
+
+        // 加载所有特性的任务
+        const tasksPromises = savedFeatures.map(async feature => {
+          const tasks = await taskStorage.getAll(feature.id);
+          return [feature.id, tasks];
+        });
+
+        const tasksResults = await Promise.all(tasksPromises);
+        const tasksMap = Object.fromEntries(tasksResults);
+        setSubTasks(tasksMap);
+      } catch (error) {
+        console.error("加载项目数据失败:", error);
+        toast.error("加载项目数据失败");
+      }
+    };
+
+    loadProject();
+  }, [projectId, router]);
+
+  // 保存特性
+  const saveFeatures = async (newFeatures) => {
+    if (!project?.id) return;
+    await featureStorage.save(project.id, newFeatures);
+    setFeatures(newFeatures);
+  };
+
+  // 保存任务
+  const saveTasks = async (featureId, newTasks) => {
+    await taskStorage.save(featureId, newTasks);
+    setSubTasks(prev => ({
+      ...prev,
+      [featureId]: newTasks
+    }));
+  };
+
+  const addFeature = async () => {
     if (!newFeature.trim()) return;
     const feature = {
       id: Date.now(),
@@ -30,11 +101,12 @@ export default function PlanPage() {
       completed: false,
       description: ""
     };
-    setFeatures([...features, feature]);
+    const newFeatures = [...features, feature];
+    await saveFeatures(newFeatures);
     setNewFeature("");
   };
 
-  const addSubTask = (featureId) => {
+  const addSubTask = async (featureId) => {
     if (!newSubTask.trim()) return;
     const task = {
       id: Date.now(),
@@ -42,14 +114,12 @@ export default function PlanPage() {
       completed: false,
       level: 0
     };
-    setSubTasks({
-      ...subTasks,
-      [featureId]: [...(subTasks[featureId] || []), task]
-    });
+    const newTasks = [...(subTasks[featureId] || []), task];
+    await saveTasks(featureId, newTasks);
     setNewSubTask("");
   };
 
-  const addSubSubTask = (featureId, parentTaskId) => {
+  const addSubSubTask = async (featureId, parentTaskId) => {
     const currentTasks = subTasks[featureId] || [];
     const parentIndex = currentTasks.findIndex(t => t.id === parentTaskId);
     if (parentIndex === -1) return;
@@ -64,51 +134,59 @@ export default function PlanPage() {
 
     const newTasks = [...currentTasks];
     newTasks.splice(parentIndex + 1, 0, newTask);
-    setSubTasks({
-      ...subTasks,
-      [featureId]: newTasks
-    });
+    await saveTasks(featureId, newTasks);
   };
 
-  const toggleTaskComplete = (featureId, taskId) => {
+  const toggleTaskComplete = async (featureId, taskId) => {
     const updatedTasks = subTasks[featureId].map(task => {
       if (task.id === taskId) {
         return { ...task, completed: !task.completed };
       }
       return task;
     });
-    setSubTasks({
-      ...subTasks,
-      [featureId]: updatedTasks
-    });
+    await saveTasks(featureId, updatedTasks);
   };
 
-  const deleteTask = (featureId, taskId) => {
+  const deleteTask = async (featureId, taskId) => {
     const updatedTasks = subTasks[featureId].filter(task =>
       task.id !== taskId && task.parentId !== taskId
     );
-    setSubTasks({
-      ...subTasks,
-      [featureId]: updatedTasks
-    });
+    await saveTasks(featureId, updatedTasks);
   };
 
-  const updateTaskTitle = (featureId, taskId, newTitle) => {
+  const updateTaskTitle = async (featureId, taskId, newTitle) => {
     const updatedTasks = subTasks[featureId].map(task => {
       if (task.id === taskId) {
         return { ...task, title: newTitle };
       }
       return task;
     });
-    setSubTasks({
-      ...subTasks,
-      [featureId]: updatedTasks
-    });
+    await saveTasks(featureId, updatedTasks);
+  };
+
+  const updateFeatureDescription = async (feature, description) => {
+    const updatedFeatures = features.map(f =>
+      f.id === feature.id ? { ...f, description } : f
+    );
+    await saveFeatures(updatedFeatures);
+    setSelectedFeature({ ...feature, description });
   };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">功能规划</h1>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">功能规划</h1>
+          {project && (
+            <p className="text-muted-foreground">
+              项目：{project.name}
+            </p>
+          )}
+        </div>
+        <Button variant="outline" onClick={() => router.push("/indie/projects")}>
+          返回项目列表
+        </Button>
+      </div>
 
       <div className="grid grid-cols-[300px_1fr] gap-6">
         {/* 左侧功能列表 */}
@@ -173,13 +251,7 @@ export default function PlanPage() {
               <Textarea
                 placeholder="添加功能描述..."
                 value={selectedFeature.description}
-                onChange={(e) => {
-                  const updatedFeatures = features.map(f =>
-                    f.id === selectedFeature.id ? { ...f, description: e.target.value } : f
-                  );
-                  setFeatures(updatedFeatures);
-                  setSelectedFeature({ ...selectedFeature, description: e.target.value });
-                }}
+                onChange={(e) => updateFeatureDescription(selectedFeature, e.target.value)}
                 className="min-h-[100px]"
               />
 
