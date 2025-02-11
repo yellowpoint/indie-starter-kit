@@ -11,9 +11,13 @@ import {
   Github,
   Globe,
   Share2,
-  Info
+  Info,
+  Copy
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const tasks = [
   {
@@ -67,6 +71,140 @@ const tasks = [
 
 export default function ExecutePage() {
   const [currentTask, setCurrentTask] = useState(1);
+  const [projectConfig, setProjectConfig] = useState({
+    name: "",
+    description: "",
+    features: ""
+  });
+
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("已复制到剪贴板");
+    } catch (err) {
+      toast.error("复制失败");
+    }
+  };
+
+  const renderTaskContent = (task) => {
+    switch (task.id) {
+      case 1:
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">{task.title}</h2>
+            <p className="text-muted-foreground">{task.description}</p>
+            <div className="flex items-center gap-2 p-4 bg-muted rounded-md">
+              <code className="flex-1">{task.command}</code>
+              <Button variant="outline" size="sm" onClick={() => copyToClipboard(task.command)}>
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">{task.title}</h2>
+            <p className="text-muted-foreground">{task.description}</p>
+            <div className="flex items-center gap-2 p-4 bg-muted rounded-md">
+              <code className="flex-1">{task.command}</code>
+              <Button variant="outline" size="sm" onClick={() => copyToClipboard(task.command)}>
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">{task.title}</h2>
+            <p className="text-muted-foreground">{task.description}</p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">项目名称</label>
+                <Input
+                  value={projectConfig.name}
+                  onChange={(e) => setProjectConfig(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="输入项目名称..."
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">项目简介</label>
+                <Textarea
+                  value={projectConfig.description}
+                  onChange={(e) => setProjectConfig(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="描述项目的主要功能和目标..."
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">核心特性</label>
+                <Textarea
+                  value={projectConfig.features}
+                  onChange={(e) => setProjectConfig(prev => ({ ...prev, features: e.target.value }))}
+                  placeholder="列出项目的关键特性..."
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">{task.title}</h2>
+            <p className="text-muted-foreground">{task.description}</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-4 bg-muted rounded-md">
+                <code className="flex-1">{task.command}</code>
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard(task.command)}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                提示：确保已经初始化 git 仓库并添加了远程源
+              </p>
+            </div>
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">{task.title}</h2>
+            <p className="text-muted-foreground">{task.description}</p>
+            <Button asChild>
+              <a href={task.link} target="_blank" rel="noopener noreferrer">
+                <Globe className="h-4 w-4 mr-2" />
+                前往 Vercel 部署
+              </a>
+            </Button>
+          </div>
+        );
+
+      case 6:
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">{task.title}</h2>
+            <p className="text-muted-foreground">{task.description}</p>
+            <div className="space-y-2">
+              {task.templates.map((template, index) => (
+                <div key={index} className="flex items-center gap-2 p-4 bg-muted rounded-md">
+                  <p className="flex-1">{template}</p>
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(template)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="container mx-auto p-6 grid grid-cols-[1fr_300px] gap-6">
@@ -81,9 +219,8 @@ export default function ExecutePage() {
           </Button>
         </div>
 
-        {/* 主要内容区域 */}
         <Card className="p-6">
-          {/* 根据 currentTask 显示相应的任务内容 */}
+          {renderTaskContent(tasks.find(task => task.id === currentTask))}
         </Card>
       </div>
 
