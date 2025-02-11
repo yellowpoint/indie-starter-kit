@@ -76,6 +76,7 @@ export default function ExecutePage() {
     description: "",
     features: ""
   });
+  const [currentProject, setCurrentProject] = useState(null);
 
   const copyToClipboard = async (text) => {
     try {
@@ -212,7 +213,7 @@ export default function ExecutePage() {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">项目执行</h1>
           <Button variant="outline" asChild>
-            <Link href="/indie/plan">
+            <Link href={`/indie/plan/${currentProject?.id}`}>
               <Info className="h-4 w-4 mr-2" />
               详细规划
             </Link>

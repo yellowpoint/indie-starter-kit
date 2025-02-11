@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useEffect, Suspense, use } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,10 +18,10 @@ import {
 import { featureStorage, taskStorage, projectStorage } from "@/lib/storage";
 import { toast } from "sonner";
 
-export default function PlanPage() {
-  const searchParams = useSearchParams();
+// 提取 PlanContent 组件
+function PlanContent({ params }) {
   const router = useRouter();
-  const projectId = searchParams.get("id");
+  const { id } = use(params);
 
   const [project, setProject] = useState(null);
   const [features, setFeatures] = useState([]);
@@ -34,20 +34,8 @@ export default function PlanPage() {
   useEffect(() => {
     const loadProject = async () => {
       try {
-        if (!projectId) {
-          // 如果没有项目 ID，尝试获取当前项目
-          const currentProject = await projectStorage.getCurrentProject();
-          if (!currentProject) {
-            // 如果没有当前项目，返回项目列表
-            router.push("/indie/projects");
-            return;
-          }
-          setProject(currentProject);
-          return;
-        }
-
         // 根据 ID 获取项目
-        const projectData = await projectStorage.getProject(projectId);
+        const projectData = await projectStorage.getProject(Number(id));
         if (!projectData) {
           toast.error("项目不存在");
           router.push("/indie/projects");
@@ -56,7 +44,7 @@ export default function PlanPage() {
         setProject(projectData);
 
         // 加载项目的功能特性
-        const savedFeatures = await featureStorage.getAll(projectId);
+        const savedFeatures = await featureStorage.getAll(id);
         setFeatures(savedFeatures);
 
         // 加载所有特性的任务
@@ -75,28 +63,27 @@ export default function PlanPage() {
     };
 
     loadProject();
-  }, [projectId, router]);
+  }, [id, router]);
 
   // 保存特性
   const saveFeatures = async (newFeatures) => {
     if (!project?.id) return;
-    await featureStorage.save(project.id, newFeatures);
-    setFeatures(newFeatures);
+    const updatedFeatures = await featureStorage.save(project.id, newFeatures);
+    setFeatures(updatedFeatures);
   };
 
   // 保存任务
   const saveTasks = async (featureId, newTasks) => {
-    await taskStorage.save(featureId, newTasks);
+    const updatedTasks = await taskStorage.save(featureId, newTasks);
     setSubTasks(prev => ({
       ...prev,
-      [featureId]: newTasks
+      [featureId]: updatedTasks
     }));
   };
 
   const addFeature = async () => {
     if (!newFeature.trim()) return;
     const feature = {
-      id: Date.now(),
       title: newFeature,
       completed: false,
       description: ""
@@ -104,12 +91,12 @@ export default function PlanPage() {
     const newFeatures = [...features, feature];
     await saveFeatures(newFeatures);
     setNewFeature("");
+    toast.success("功能添加成功");
   };
 
   const addSubTask = async (featureId) => {
     if (!newSubTask.trim()) return;
     const task = {
-      id: Date.now(),
       title: newSubTask,
       completed: false,
       level: 0
@@ -117,6 +104,7 @@ export default function PlanPage() {
     const newTasks = [...(subTasks[featureId] || []), task];
     await saveTasks(featureId, newTasks);
     setNewSubTask("");
+    toast.success("任务添加成功");
   };
 
   const addSubSubTask = async (featureId, parentTaskId) => {
@@ -125,7 +113,6 @@ export default function PlanPage() {
     if (parentIndex === -1) return;
 
     const newTask = {
-      id: Date.now(),
       title: "新子任务",
       completed: false,
       level: currentTasks[parentIndex].level + 1,
@@ -135,6 +122,7 @@ export default function PlanPage() {
     const newTasks = [...currentTasks];
     newTasks.splice(parentIndex + 1, 0, newTask);
     await saveTasks(featureId, newTasks);
+    toast.success("子任务添加成功");
   };
 
   const toggleTaskComplete = async (featureId, taskId) => {
@@ -152,6 +140,7 @@ export default function PlanPage() {
       task.id !== taskId && task.parentId !== taskId
     );
     await saveTasks(featureId, updatedTasks);
+    toast.success("任务删除成功");
   };
 
   const updateTaskTitle = async (featureId, taskId, newTitle) => {
@@ -207,19 +196,18 @@ export default function PlanPage() {
             {features.map((feature) => (
               <Card
                 key={feature.id}
-                className={`p-4 cursor-pointer ${selectedFeature?.id === feature.id ? "border-primary" : ""
-                  }`}
+                className={`p-4 cursor-pointer ${selectedFeature?.id === feature.id ? "border-primary" : ""}`}
                 onClick={() => setSelectedFeature(feature)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       checked={feature.completed}
-                      onCheckedChange={(checked) => {
+                      onCheckedChange={async (checked) => {
                         const updatedFeatures = features.map(f =>
                           f.id === feature.id ? { ...f, completed: checked } : f
                         );
-                        setFeatures(updatedFeatures);
+                        await saveFeatures(updatedFeatures);
                       }}
                       onClick={(e) => e.stopPropagation()}
                     />
@@ -308,5 +296,37 @@ export default function PlanPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// 加载状态组件
+function LoadingState() {
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="animate-pulse">
+        <div className="h-8 w-32 bg-muted rounded mb-2"></div>
+        <div className="h-4 w-48 bg-muted rounded"></div>
+      </div>
+      <div className="grid grid-cols-[300px_1fr] gap-6">
+        <div className="space-y-4">
+          <div className="h-10 bg-muted rounded"></div>
+          <div className="space-y-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-16 bg-muted rounded"></div>
+            ))}
+          </div>
+        </div>
+        <div className="h-[400px] bg-muted rounded"></div>
+      </div>
+    </div>
+  );
+}
+
+// 主页面组件
+export default function PlanPage({ params }) {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <PlanContent params={params} />
+    </Suspense>
   );
 } 

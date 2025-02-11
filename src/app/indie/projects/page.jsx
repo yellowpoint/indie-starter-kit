@@ -103,7 +103,7 @@ export default function ProjectsPage() {
 
   const handleProjectClick = async (project) => {
     await projectStorage.setCurrentProject(project);
-    router.push(`/indie/plan?id=${project.id}`);
+    router.push(`/indie/plan/${project.id}`);
   };
 
   const ProjectForm = ({ project, onSubmit, onCancel }) => (
