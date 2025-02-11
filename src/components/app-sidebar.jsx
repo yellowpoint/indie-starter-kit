@@ -33,6 +33,10 @@ import {
   Lightbulb,
   Wrench,
   CheckSquare,
+  Play,
+  ListTodo,
+  FileText,
+  FolderKanban,
 } from "lucide-react";
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
@@ -77,39 +81,50 @@ export const data = {
   ],
   navMain: [
     {
-      title: "独立开发启动器",
-      url: "/indie-starter",
+      title: "独立开发",
       icon: Rocket,
       items: [
         {
-          title: "心态指南",
-          url: "/indie-starter/mindset",
+          title: "项目启动",
+          url: "/indie/start",
+          icon: Play,
+          description: "开始你的独立开发之旅"
+        },
+        {
+          title: "项目执行",
+          url: "/indie/execute",
+          icon: ListTodo,
+          description: "按步骤执行项目开发"
+        },
+        {
+          title: "功能规划",
+          url: "/indie/plan",
+          icon: FileText,
+          description: "详细的功能分解与规划"
+        },
+        {
+          title: "项目管理",
+          url: "/indie/projects",
+          icon: FolderKanban,
+          description: "管理所有独立开发项目"
+        },
+        {
+          title: "心态指导",
+          url: "/indie/mindset",
           icon: Brain,
-          description: "调整心态,建立正确的独立开发思维模式"
+          description: "独立开发者心态建设"
         },
         {
-          title: "策略库",
-          url: "/indie-starter/strategy",
-          icon: Lightbulb,
-          description: "验证想法,找到适合的切入点"
-        },
-        {
-          title: "项目灵感库",
-          url: "/indie-starter/ideas",
+          title: "灵感库",
+          url: "/indie/ideas",
           icon: Sparkles,
-          description: "发现机会,获取可执行的项目思路"
+          description: "收集灵感与创意"
         },
         {
-          title: "工具包",
-          url: "/indie-starter/toolkit",
+          title: "工具箱",
+          url: "/indie/toolkit",
           icon: Wrench,
-          description: "快速开发,降低启动门槛"
-        },
-        {
-          title: "进度追踪",
-          url: "/indie-starter/progress",
-          icon: CheckSquare,
-          description: "48小时行动清单"
+          description: "常用工具与资源"
         }
       ]
     },

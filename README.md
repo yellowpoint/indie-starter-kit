@@ -40,24 +40,9 @@
 - 进度可视化
 - 成就系统
 
-## 项目结构
-
-src/app/indie-starter/
-├── page.jsx # 主页面
-├── mindset/ # 心态指南模块
-│ └── page.jsx
-├── strategy/ # 策略库模块
-│ └── page.jsx
-├── ideas/ # 项目灵感库模块
-│ └── page.jsx
-├── toolkit/ # 工具包模块
-│ └── page.jsx
-└── progress/ # 进度追踪模块
-└── page.jsx
-
 ## 技术栈
 
-- **框架**: Next.js 13+ (App Router)
+- **框架**: Next.js 15 (App Router)
 - **样式**: TailwindCSS
 - **组件**: shadcn/ui
 - **动画**: Framer Motion
@@ -105,14 +90,6 @@ pnpm build
 - [ ] 社区功能
 - [ ] 更多项目模板
 - [ ] AI 辅助功能
-
-## 贡献指南
-
-1. Fork 本仓库
-2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交你的改动 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启一个 Pull Request
 
 ## 致谢
 
