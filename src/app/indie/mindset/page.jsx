@@ -4,31 +4,109 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Brain, MessageCircle, HelpCircle, Target, Clock, Rocket, Zap } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const mindsetTips = [
-  {
-    title: "完成比完美更重要",
-    description: "GitHub第一个版本只是Ruby脚本",
-    detail: "不要追求完美主义,先完成一个最小可用版本。记住:发布的产品总比完美的计划更有价值。"
+const mindsetIssues = {
+  motivation: {
+    title: "动力维度",
+    icon: Rocket,
+    description: "解决「不想做」「没方向」的问题",
+    problems: [
+      "三分钟热度，长期难坚持",
+      "需求模糊，不确定做什么",
+      "缺乏正反馈，成就感低"
+    ],
+    solutions: [
+      {
+        title: "三圈定位法",
+        example: "喜欢设计(兴趣) + 会Figma(技能) + 企业需要原型工具(市场) → Figma插件",
+        detail: "绘制「兴趣-技能-市场」交集图,优先选择三圈重叠领域"
+      },
+      {
+        title: "微成就系统",
+        example: "每天完成3个1小时级任务,如'完成登录按钮UI'",
+        detail: "拆解任务至1小时可完成颗粒度,每日记录3项进展"
+      },
+      {
+        title: "人工反馈模拟",
+        example: "开发AI工具前,先通过微信群手动回复用户问题",
+        detail: "早期手动提供服务,直接获取价值感与反馈"
+      }
+    ]
   },
-  {
-    title: "竞争是伪命题",
-    description: "Notion入场时已有Evernote",
-    detail: "市场足够大,关键是找到自己的差异化定位。已有竞品证明市场存在,这是好事。"
+  confidence: {
+    title: "信心维度",
+    icon: Brain,
+    description: "解决「不敢做」「怕失败」的问题",
+    problems: [
+      "技能焦虑（技术不够不敢开始）",
+      "竞品恐惧（别人做得更好）",
+      "自我怀疑（我的产品没价值）"
+    ],
+    solutions: [
+      {
+        title: "逆向工程训练",
+        example: "从抄写Todo List开始,逐步添加新功能",
+        detail: "GitHub上80%项目都是迭代出来的,不是一蹴而就"
+      },
+      {
+        title: "竞品存在证明市场有效",
+        example: "72%成功产品并非行业首创",
+        detail: "用工具爬取竞品差评,针对性解决Top3痛点"
+      },
+      {
+        title: "最小技术栈策略",
+        example: "天气APP只需: API调用 + 数据展示 + 部署",
+        detail: "用20%技术解决80%问题,放弃过度优化"
+      }
+    ]
   },
-  {
-    title: "能力是动词",
-    description: "所有开发者都曾边Google边写代码",
-    detail: "不要等到完全准备好才开始。做中学,学中做,这是最快的进步方式。"
+  execution: {
+    title: "执行维度",
+    icon: Target,
+    description: "解决「做不好」「效率低」的问题",
+    problems: [
+      "完美主义（必须做完美才能发布）",
+      "目标模糊（功能越加越多，偏离主线）",
+      "行动瘫痪（一直在准备，从未开始）"
+    ],
+    solutions: [
+      {
+        title: "早期粗糙是必然的",
+        example: "早期抖音视频压缩模糊,但抓住15秒短视频核心价值",
+        detail: "把你的v0.1视为探针，而非最终形态"
+      },
+      {
+        title: "20/80极简法则",
+        example: "记账软件先做'快速记录+分类统计',放弃报表导出",
+        detail: "用20%功能解决80%核心需求,剩余需求可能不存在"
+      },
+      {
+        title: "作弊式任务拆解",
+        example: "登录功能=抄代码→改UI→换API(每步≤1小时)",
+        detail: "把复杂任务拆解为1小时内可完成的小步骤"
+      }
+    ]
   }
-];
+};
 
-const dailyQuestions = [
-  "今天我可以容忍哪个不完美？",
-  "如果只有24小时,我会先做什么？",
-  "这个功能真的是必需的吗？",
-  "用户真正的痛点是什么？"
-];
+const dailyQuestions = {
+  motivation: [
+    "今天完成了哪3个微小任务？",
+    "用户反馈中最让我有成就感的是什么？",
+    "我的项目是否还在三圈重叠区域？"
+  ],
+  confidence: [
+    "今天学习/修改了几行代码？",
+    "竞品的哪些问题是我能解决的？",
+    "能用更简单的技术栈实现核心功能吗？"
+  ],
+  execution: [
+    "是否允许这个功能先做得差一点？",
+    "能再删掉哪些非必需功能？",
+    "如何把当前任务再拆小一点？"
+  ]
+};
 
 const selfDoubtGuide = {
   cognition: {
@@ -143,109 +221,65 @@ export default function MindsetPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="rounded-full p-2 bg-blue-500 bg-opacity-10">
-              <Brain className="h-5 w-5" />
-            </div>
-            <h2 className="text-xl font-semibold">{selfDoubtGuide.cognition.title}</h2>
-          </div>
-          <div className="space-y-6">
-            {selfDoubtGuide.cognition.items.map((item, index) => (
-              <div key={index} className="space-y-2">
-                <h3 className="font-medium">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.example}</p>
-                <p className="text-sm bg-muted p-3 rounded-lg">{item.detail}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </motion.div>
+        <Tabs defaultValue="motivation" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="motivation" className="space-x-2">
+              <Rocket className="h-4 w-4" />
+              <span>动力维度</span>
+            </TabsTrigger>
+            <TabsTrigger value="confidence" className="space-x-2">
+              <Brain className="h-4 w-4" />
+              <span>信心维度</span>
+            </TabsTrigger>
+            <TabsTrigger value="execution" className="space-x-2">
+              <Target className="h-4 w-4" />
+              <span>执行维度</span>
+            </TabsTrigger>
+          </TabsList>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="rounded-full p-2 bg-green-500 bg-opacity-10">
-              <Target className="h-5 w-5" />
-            </div>
-            <h2 className="text-xl font-semibold">{selfDoubtGuide.validation.title}</h2>
-          </div>
-          <div className="grid gap-6 md:grid-cols-2">
-            {selfDoubtGuide.validation.steps.map((step, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="rounded-full bg-muted w-8 h-8 flex items-center justify-center">
-                    {index + 1}
+          {Object.entries(mindsetIssues).map(([key, section]) => (
+            <TabsContent key={key} value={key}>
+              <Card className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className={`rounded-full p-2 ${key === 'motivation' ? 'bg-purple-500' :
+                    key === 'confidence' ? 'bg-blue-500' :
+                      'bg-green-500'
+                    } bg-opacity-10`}>
+                    <section.icon className="h-5 w-5" />
                   </div>
-                  <h3 className="font-medium">{step.name}</h3>
+                  <div>
+                    <h2 className="text-xl font-semibold">{section.title}</h2>
+                    <p className="text-sm text-muted-foreground">{section.description}</p>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">{step.description}</p>
-                <p className="text-sm bg-muted p-2 rounded-lg">{step.action}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="rounded-full p-2 bg-yellow-500 bg-opacity-10">
-              <Clock className="h-5 w-5" />
-            </div>
-            <h2 className="text-xl font-semibold">{selfDoubtGuide.actionPlan.title}</h2>
-          </div>
-          <div className="space-y-6">
-            {selfDoubtGuide.actionPlan.days.map((day, index) => (
-              <div key={index} className="space-y-3">
-                <h3 className="font-medium">{day.title}</h3>
-                <div className="space-y-2">
-                  {day.schedule.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm">
-                      <Zap className="h-4 w-4 text-yellow-500" />
-                      <span>{item}</span>
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium mb-2">典型问题</h3>
+                  <div className="space-y-2">
+                    {section.problems.map((problem, i) => (
+                      <div key={i} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground"></div>
+                        <p className="text-sm">{problem}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <h3 className="text-sm font-medium">解决方案</h3>
+                  {section.solutions.map((solution, i) => (
+                    <div key={i} className="space-y-2">
+                      <h4 className="font-medium">{solution.title}</h4>
+                      <p className="text-sm text-muted-foreground">{solution.example}</p>
+                      <p className="text-sm bg-muted p-3 rounded-lg">{solution.detail}</p>
                     </div>
                   ))}
                 </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+              </Card>
+            </TabsContent>
+          ))}
+        </Tabs>
       </motion.div>
-
-      <div className="space-y-6">
-        {mindsetTips.map((tip, index) => (
-          <motion.div
-            key={tip.title}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Card className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="rounded-full p-2 bg-purple-500 bg-opacity-10">
-                  <Brain className="h-5 w-5" />
-                </div>
-                <h2 className="text-xl font-semibold">{tip.title}</h2>
-              </div>
-              <p className="text-muted-foreground mb-4">
-                {tip.description}
-              </p>
-              <p className="text-sm bg-muted p-4 rounded-lg">
-                {tip.detail}
-              </p>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -260,18 +294,24 @@ export default function MindsetPage() {
             <h2 className="text-xl font-semibold">每日自我提问</h2>
           </div>
           <div className="space-y-4">
-            {dailyQuestions.map((question, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-2 p-3 bg-muted rounded-lg"
-              >
-                <MessageCircle className="h-4 w-4" />
-                <p>{question}</p>
+            {Object.entries(dailyQuestions).map(([category, questions]) => (
+              <div key={category} className="space-y-2">
+                <h3 className="text-sm font-medium capitalize">{category}</h3>
+                {questions.map((question, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 p-3 bg-muted rounded-lg"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <p>{question}</p>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
         </Card>
       </motion.div>
+
     </div>
   );
 } 
