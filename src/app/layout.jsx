@@ -64,14 +64,14 @@ export default function RootLayout({ children }) {
           <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
-              <Header className="h-16" />
+              {/* <Header className="h-16" /> */}
               <main className="h-[calc(100vh-4rem)] overflow-auto">
                 {children}
               </main>
               <Toaster />
             </SidebarInset>
           </SidebarProvider>
-          <CozeScript />
+          {/* <CozeScript /> */}
           <Firework />
         </ThemeProvider>
       </body>

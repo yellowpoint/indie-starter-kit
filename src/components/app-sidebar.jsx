@@ -37,23 +37,28 @@ import {
   ListTodo,
   FileText,
   FolderKanban,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { triggerFirework } from "@/components/firework"
-
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
+import { useTheme } from "next-themes"
+import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  SidebarTrigger,
 } from "@/components/ui/sidebar"
+
+import { NavMain } from "@/components/nav-main"
+import { NavProjects } from "@/components/nav-projects"
+import { NavUser } from "@/components/nav-user"
+import { TeamSwitcher } from "@/components/team-switcher"
 
 // This is sample data.
 export const data = {
@@ -178,16 +183,14 @@ export function AppSidebar({
   ...props
 }) {
   const pathname = usePathname()
+  const { theme, setTheme } = useTheme();
 
-  // 根据当前路径更新导航数据
   const navMainWithActive = React.useMemo(() => {
     return data.navMain.map(section => ({
       ...section,
-      // 检查当前路径是否匹配该部分的任何子项
       isActive: section.items?.some(item => pathname === item.url),
       items: section.items?.map(item => ({
         ...item,
-        // 检查当前路径是否匹配该项
         isActive: pathname === item.url
       }))
     }))
@@ -195,16 +198,26 @@ export function AppSidebar({
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      {/* <SidebarHeader className="relative">
-        <TeamSwitcher teams={data.teams} />
-      </SidebarHeader> */}
+      <SidebarHeader className="relative">
+        {/* <TeamSwitcher teams={data.teams} /> */}
+        <SidebarTrigger className="h-8 w-8" />
+      </SidebarHeader>
       <SidebarContent>
+
         <NavMain items={navMainWithActive} />
-        {/* <NavProjects projects={data.projects} /> */}
       </SidebarContent>
-      {/* <SidebarFooter className="relative">
-        <NavUser user={data.user} />
-      </SidebarFooter> */}
+      <SidebarFooter className="relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+          className="h-8 w-8"
+        >
+          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">切换主题</span>
+        </Button>
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
