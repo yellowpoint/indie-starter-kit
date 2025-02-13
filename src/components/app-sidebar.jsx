@@ -95,12 +95,12 @@ export const data = {
           icon: Play,
           description: "开始你的独立开发之旅"
         },
-        {
-          title: "项目执行",
-          url: "/indie/execute",
-          icon: ListTodo,
-          description: "按步骤执行项目开发"
-        },
+        // {
+        //   title: "项目执行",
+        //   url: "/indie/execute",
+        //   icon: ListTodo,
+        //   description: "按步骤执行项目开发"
+        // },
         // {
         //   title: "功能规划",
         //   url: "/indie/plan",

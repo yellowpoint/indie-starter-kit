@@ -16,7 +16,16 @@ import {
   Pencil,
   Users,
   Target,
-  Workflow
+  Workflow,
+  Download,
+  Code,
+  FileEdit,
+  Github,
+  Globe,
+  Share2,
+  Info,
+  Copy,
+  ListTodo
 } from "lucide-react";
 import {
   Tabs,
@@ -32,6 +41,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import debounce from "lodash/debounce";
+import Link from "next/link";
 
 // 添加自定义防抖 hook
 function useDebounce(callback, delay = 500) {
@@ -40,6 +50,57 @@ function useDebounce(callback, delay = 500) {
     [callback]
   );
 }
+
+// 从 execute page 移过来的任务列表
+const tasks = [
+  {
+    id: 1,
+    title: "下载项目模板",
+    icon: Download,
+    description: "获取基础项目模板",
+    command: "git clone https://github.com/your-username/indie-starter-template.git"
+  },
+  {
+    id: 2,
+    title: "启动编辑器",
+    icon: Code,
+    description: "使用 VS Code 打开项目",
+    command: "code indie-starter-template"
+  },
+  {
+    id: 3,
+    title: "项目配置",
+    icon: FileEdit,
+    description: "设置项目名称和简介",
+    fields: ["项目名称", "项目简介", "关键特性"]
+  },
+  {
+    id: 4,
+    title: "Github 部署",
+    icon: Github,
+    description: "创建仓库并推送代码",
+    command: "git push origin main"
+  },
+  {
+    id: 5,
+    title: "Vercel 部署",
+    icon: Globe,
+    description: "部署到 Vercel 平台",
+    link: "https://vercel.com/new"
+  },
+  {
+    id: 6,
+    title: "发布分享",
+    icon: Share2,
+    description: "分享到社交媒体",
+    templates: [
+      "🚀 我刚刚完成了一个新项目：[项目名称]",
+      "💡 解决了[什么问题]",
+      "🔗 项目地址：[URL]",
+      "欢迎体验反馈！"
+    ]
+  }
+];
 
 // 提取 PlanContent 组件
 function PlanContent({ params }) {
@@ -50,8 +111,8 @@ function PlanContent({ params }) {
   const [features, setFeatures] = useState([]);
   const [userFlow, setUserFlow] = useState({
     targetUsers: "",
-    userScenarios: "",
-    keyFeatures: ""
+    keyFeatures: "",
+    scenarios: []
   });
   const [newFeature, setNewFeature] = useState("");
   const [selectedFeature, setSelectedFeature] = useState(null);
@@ -59,6 +120,14 @@ function PlanContent({ params }) {
   const [subTasks, setSubTasks] = useState({});
   const [editingFeatureId, setEditingFeatureId] = useState(null);
   const [deleteFeaturePopoverOpen, setDeleteFeaturePopoverOpen] = useState({});
+  const [scenarios, setScenarios] = useState([]);
+  const [newScenario, setNewScenario] = useState("");
+  const [currentTask, setCurrentTask] = useState(0);
+  const [projectConfig, setProjectConfig] = useState({
+    name: "",
+    description: "",
+    features: ""
+  });
 
   // 创建防抖版本的数据库保存函数
   const debouncedSaveToDb = useDebounce(async (type, data) => {
@@ -142,10 +211,11 @@ function PlanContent({ params }) {
         // 加载用户流程数据
         const savedUserFlow = await projectStorage.getUserFlow(id) || {
           targetUsers: "",
-          userScenarios: "",
-          keyFeatures: ""
+          keyFeatures: "",
+          scenarios: []
         };
         setUserFlow(savedUserFlow);
+        setScenarios(savedUserFlow.scenarios || []);
 
         // 加载所有特性的任务
         const tasksPromises = savedFeatures.map(async feature => {
@@ -276,48 +346,113 @@ function PlanContent({ params }) {
     toast.success("功能删除成功");
   };
 
+  const addScenario = () => {
+    if (!newScenario.trim()) return;
+    const scenario = {
+      id: Date.now(),
+      content: newScenario
+    };
+    const updatedScenarios = [...scenarios, scenario];
+    setScenarios(updatedScenarios);
+    setNewScenario("");
+
+    // 保存到数据库
+    const updatedUserFlow = {
+      ...userFlow,
+      scenarios: updatedScenarios
+    };
+    setUserFlow(updatedUserFlow);
+    debouncedSaveToDb('userFlow', updatedUserFlow);
+  };
+
+  const deleteScenario = (id) => {
+    const updatedScenarios = scenarios.filter(s => s.id !== id);
+    setScenarios(updatedScenarios);
+
+    // 保存到数据库
+    const updatedUserFlow = {
+      ...userFlow,
+      scenarios: updatedScenarios
+    };
+    setUserFlow(updatedUserFlow);
+    debouncedSaveToDb('userFlow', updatedUserFlow);
+  };
+
+  const updateScenarioContent = (scenarioId, content) => {
+    const updatedScenarios = scenarios.map(s =>
+      s.id === scenarioId ? { ...s, content } : s
+    );
+    setScenarios(updatedScenarios);
+
+    // 保存到数据库
+    const updatedUserFlow = {
+      ...userFlow,
+      scenarios: updatedScenarios
+    };
+    setUserFlow(updatedUserFlow);
+    debouncedSaveToDb('userFlow', updatedUserFlow);
+  };
+
   const generateFeatures = () => {
     try {
-      if (!userFlow.keyFeatures.trim()) {
-        toast.error("请先填写核心特性");
+      // 检查必要的输入是否存在
+      if (!project?.name || !project?.description || !project?.keyFeatures ||
+        !userFlow.targetUsers || scenarios.length === 0) {
+        toast.error("请先完善项目信息和用户信息");
         return;
       }
 
-      const newFeatures = userFlow.keyFeatures
-        .split('\n')
-        .filter(f => f.trim())
-        .map(feature => ({
+      // 模拟 AI 分析并生成功能点
+      const mockAIFeatures = [
+        {
           id: Date.now() + Math.random(),
-          title: feature.trim(),
-          completed: false,
-          description: ""
-        }))
-        .filter(newFeature =>
-          !features.some(existingFeature =>
-            existingFeature.title === newFeature.title
-          )
-        );
+          title: "用户注册与登录系统",
+          description: `基于项目（${project.name}）和目标用户（${userFlow.targetUsers.slice(0, 20)}...）的需求，
+            需要简单直观的账号系统。`,
+          completed: false
+        },
+        {
+          id: Date.now() + Math.random(),
+          title: "个性化推荐功能",
+          description: `根据用户场景（${scenarios[0]?.content.slice(0, 20)}...）,
+            提供智能推荐。`,
+          completed: false
+        },
+        // ... 其他生成的功能
+      ];
+
+      // 过滤掉已存在的功能
+      const newFeatures = mockAIFeatures.filter(newFeature =>
+        !features.some(existingFeature =>
+          existingFeature.title === newFeature.title
+        )
+      );
 
       if (newFeatures.length === 0) {
-        toast.info("没有新的功能点需要添加");
+        toast.info("没有新的功能建议");
         return;
       }
 
       const updatedFeatures = [...features, ...newFeatures];
       setFeatures(updatedFeatures);
       debouncedSaveToDb('features', updatedFeatures);
-      toast.success(`成功生成 ${newFeatures.length} 个功能点`);
+      toast.success(`AI 已生成 ${newFeatures.length} 个功能建议`);
     } catch (error) {
-      console.error("生成功能点失败:", error);
-      toast.error("生成功能点失败");
+      console.error("生成功能建议失败:", error);
+      toast.error("生成功能建议失败");
     }
+  };
+
+  const handleCopyCommand = (command) => {
+    navigator.clipboard.writeText(command);
+    toast.success("命令已复制到剪贴板");
   };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">项目规划</h1>
+          <h1 className="text-2xl font-bold">项目详情</h1>
           {project && (
             <p className="text-muted-foreground">
               项目：{project.name}
@@ -332,8 +467,9 @@ function PlanContent({ params }) {
       <Tabs defaultValue="info" className="space-y-6">
         <TabsList>
           <TabsTrigger value="info">基本信息</TabsTrigger>
-          <TabsTrigger value="flow">使用流程</TabsTrigger>
+          <TabsTrigger value="flow">使用场景</TabsTrigger>
           <TabsTrigger value="features">功能规划</TabsTrigger>
+          <TabsTrigger value="execute">项目执行</TabsTrigger>
         </TabsList>
 
         <TabsContent value="info" className="space-y-4">
@@ -356,7 +492,18 @@ function PlanContent({ params }) {
                   className="min-h-[100px]"
                 />
               </div>
-              {/* 其他项目基本信息字段... */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Target className="h-5 w-5" />
+                  <label className="text-sm font-medium">核心特性</label>
+                </div>
+                <Textarea
+                  value={project?.keyFeatures || ""}
+                  onChange={(e) => updateProject({ keyFeatures: e.target.value })}
+                  placeholder="列出产品的核心特性，每行一个..."
+                  className="min-h-[100px]"
+                />
+              </div>
             </div>
           </Card>
         </TabsContent>
@@ -382,34 +529,42 @@ function PlanContent({ params }) {
                   <Workflow className="h-5 w-5" />
                   <label className="text-sm font-medium">使用场景</label>
                 </div>
-                <Textarea
-                  value={userFlow.userScenarios}
-                  onChange={(e) => updateUserFlow({ userScenarios: e.target.value })}
-                  placeholder="描述用户使用产品的具体场景..."
-                  className="min-h-[100px]"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    <label className="text-sm font-medium">核心特性</label>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Textarea
+                      value={newScenario}
+                      onChange={(e) => setNewScenario(e.target.value)}
+                      placeholder="添加新场景..."
+                      onKeyPress={(e) => e.key === 'Enter' && addScenario()}
+                    />
+                    <Button onClick={addScenario}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={generateFeatures}
-                  >
-                    生成功能点
-                  </Button>
+                  <div className="space-y-2">
+                    {scenarios.map((scenario) => (
+                      <Card key={scenario.id} className="p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <Textarea
+                            value={scenario.content}
+                            onChange={(e) => {
+                              updateScenarioContent(scenario.id, e.target.value);
+                            }}
+                            placeholder="描述使用场景..."
+                            className="flex-1"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteScenario(scenario.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
-                <Textarea
-                  value={userFlow.keyFeatures}
-                  onChange={(e) => updateUserFlow({ keyFeatures: e.target.value })}
-                  placeholder="列出产品的核心特性，每行一个..."
-                  className="min-h-[100px]"
-                />
               </div>
             </div>
           </Card>
@@ -419,15 +574,26 @@ function PlanContent({ params }) {
           <div className="grid grid-cols-[300px_1fr] gap-6">
             {/* 左侧功能列表 */}
             <div className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  value={newFeature}
-                  onChange={(e) => setNewFeature(e.target.value)}
-                  placeholder="添加新功能..."
-                  onKeyPress={(e) => e.key === 'Enter' && addFeature()}
-                />
-                <Button onClick={addFeature}>
-                  <Plus className="h-4 w-4" />
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={newFeature}
+                    onChange={(e) => setNewFeature(e.target.value)}
+                    placeholder="添加新功能..."
+                    onKeyPress={(e) => e.key === 'Enter' && addFeature()}
+                  />
+                  <Button onClick={addFeature}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateFeatures}
+                  className="w-full flex items-center gap-2"
+                >
+                  <Target className="h-4 w-4" />
+                  AI 分析并生成功能建议
                 </Button>
               </div>
 
@@ -618,6 +784,97 @@ function PlanContent({ params }) {
                 </div>
               </Card>
             )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="execute" className="space-y-4">
+          <div className="grid gap-6">
+            {tasks.map((task) => (
+              <Card key={task.id} className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className={`rounded-full p-2 ${currentTask >= task.id ? 'bg-primary' : 'bg-muted'}`}>
+                    <task.icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <h3 className="text-lg font-semibold">{task.title}</h3>
+                    <p className="text-muted-foreground">{task.description}</p>
+
+                    {task.command && (
+                      <div className="flex items-center gap-2 bg-muted p-2 rounded-md">
+                        <code className="text-sm">{task.command}</code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleCopyCommand(task.command)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+
+                    {task.fields && (
+                      <div className="space-y-4">
+                        {task.fields.map((field) => (
+                          <div key={field} className="space-y-2">
+                            <label className="text-sm font-medium">{field}</label>
+                            {field === "项目简介" || field === "关键特性" ? (
+                              <Textarea
+                                value={projectConfig[field.toLowerCase()]}
+                                onChange={(e) =>
+                                  setProjectConfig({
+                                    ...projectConfig,
+                                    [field.toLowerCase()]: e.target.value,
+                                  })
+                                }
+                              />
+                            ) : (
+                              <Input
+                                value={projectConfig[field.toLowerCase()]}
+                                onChange={(e) =>
+                                  setProjectConfig({
+                                    ...projectConfig,
+                                    [field.toLowerCase()]: e.target.value,
+                                  })
+                                }
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {task.link && (
+                      <Button asChild>
+                        <Link href={task.link} target="_blank">
+                          访问链接
+                          <Globe className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    )}
+
+                    {task.templates && (
+                      <div className="space-y-2">
+                        {task.templates.map((template, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-muted p-2 rounded-md"
+                          >
+                            <p className="text-sm">{template}</p>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleCopyCommand(template)}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         </TabsContent>
       </Tabs>

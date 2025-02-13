@@ -65,7 +65,7 @@ export default function RootLayout({ children }) {
             <AppSidebar />
             <SidebarInset>
               {/* <Header className="h-16" /> */}
-              <main className="h-[calc(100vh-4rem)] overflow-auto">
+              <main className="h-[calc(100vh)] overflow-auto">
                 {children}
               </main>
               <Toaster />

@@ -58,11 +58,8 @@ export default function StartPage() {
       // 设置为当前项目
       await projectStorage.setCurrentProject(newProject);
 
-      // 存储项目想法到 localStorage
-      localStorage.setItem("currentProjectIdea", idea);
-
       toast.success("项目创建成功");
-      router.push("/indie/execute");
+      router.push(`/indie/plan/${newProject.id}`);
     } catch (error) {
       console.error("创建项目失败:", error);
       toast.error("创建项目失败，请重试");
