@@ -43,6 +43,7 @@
     "d3-cloud": "^1.2.7",
     "framer-motion": "^11.13.1",
     "localforage": "^1.10.0",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.466.0",
     "lunar-calendar": "^0.1.4",
     "next": "15.0.3",

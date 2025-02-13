@@ -103,6 +103,15 @@ export const projectStorage = {
     await featureStorage.deleteAllByProject(id);
 
     return newProjects;
+  },
+
+  async getUserFlow(projectId) {
+    return await stores.projects.getItem(`userflow-${projectId}`);
+  },
+
+  async saveUserFlow(projectId, userFlow) {
+    await stores.projects.setItem(`userflow-${projectId}`, userFlow);
+    return userFlow;
   }
 };
 

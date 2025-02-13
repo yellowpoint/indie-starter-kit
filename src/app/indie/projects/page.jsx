@@ -274,14 +274,20 @@ export default function ProjectsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setEditingProject(null)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingProject(null);
+                          }}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleUpdateProject(project.id, editingProject)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUpdateProject(project.id, editingProject);
+                          }}
                         >
                           <Check className="h-4 w-4" />
                         </Button>
@@ -304,14 +310,20 @@ export default function ProjectsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setEditingProject(project)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingProject(project);
+                          }}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteProject(project.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteProject(project.id);
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

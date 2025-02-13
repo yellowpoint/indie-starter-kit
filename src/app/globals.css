@@ -42,6 +42,9 @@ body {
     --chart-3: 16 100% 28%; /* #8f1e00 */
     --chart-4: 25 100% 27%; /* #8B4513 */
     --chart-5: 37 100% 80%; /* #ffd299 */
+
+    /* 添加 placeholder 颜色变量 */
+    --muted-foreground-light: 0 0% 17% / 0.35; /* 更淡的文字颜色 */
   }
 
   .dark {
@@ -77,6 +80,9 @@ body {
     --chart-3: 15 70% 50%; /* 深橙色 */
     --chart-4: 45 70% 50%; /* 琥珀色 */
     --chart-5: 30 15% 90%; /* 浅褐色 */
+
+    /* 暗色模式下的 placeholder 颜色 */
+    --muted-foreground-light: 30 15% 70% / 0.35;
   }
 }
 
@@ -86,5 +92,12 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--muted-foreground-light)) !important;
   }
 }
