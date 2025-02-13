@@ -33,6 +33,105 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
+const ProjectForm = ({ project, onSubmit }) => {
+  const [formData, setFormData] = useState(project);
+
+  useEffect(() => {
+    setFormData(project);
+  }, [project]);
+
+  const handleChange = (updates) => {
+    const newData = { ...formData, ...updates };
+    setFormData(newData);
+    onSubmit(newData);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="text-sm font-medium">项目名称</label>
+        <Input
+          value={formData.name}
+          onChange={(e) => handleChange({ name: e.target.value })}
+          placeholder="输入项目名称"
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium">开始时间</label>
+        <Input
+          type="date"
+          value={formData.startDate}
+          onChange={(e) => handleChange({ startDate: e.target.value })}
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium">进度</label>
+        <Input
+          type="number"
+          min="0"
+          max="100"
+          value={formData.progress}
+          onChange={(e) => handleChange({ progress: parseInt(e.target.value) })}
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium">心动指数 (1-5)</label>
+        <Select
+          value={formData.excitement.toString()}
+          onValueChange={(value) => handleChange({ excitement: parseInt(value) })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {[1, 2, 3, 4, 5].map(n => (
+              <SelectItem key={n} value={n.toString()}>
+                {n}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <label className="text-sm font-medium">难度 (1-5)</label>
+        <Select
+          value={formData.difficulty.toString()}
+          onValueChange={(value) => handleChange({ difficulty: parseInt(value) })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {[1, 2, 3, 4, 5].map(n => (
+              <SelectItem key={n} value={n.toString()}>
+                {n}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <label className="text-sm font-medium">状态</label>
+        <Select
+          value={formData.status}
+          onValueChange={(value) => handleChange({ status: value })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {["未开始", "进行中", "已完成", "已暂停"].map(status => (
+              <SelectItem key={status} value={status}>
+                {status}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+};
+
 export default function ProjectsPage() {
   const router = useRouter();
   const [projects, setProjects] = useState([]);
@@ -105,91 +204,6 @@ export default function ProjectsPage() {
     await projectStorage.setCurrentProject(project);
     router.push(`/indie/plan/${project.id}`);
   };
-
-  const ProjectForm = ({ project, onSubmit, onCancel }) => (
-    <div className="space-y-4">
-      <div>
-        <label className="text-sm font-medium">项目名称</label>
-        <Input
-          value={project.name}
-          onChange={(e) => onSubmit({ ...project, name: e.target.value })}
-          placeholder="输入项目名称"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium">开始时间</label>
-        <Input
-          type="date"
-          value={project.startDate}
-          onChange={(e) => onSubmit({ ...project, startDate: e.target.value })}
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium">进度</label>
-        <Input
-          type="number"
-          min="0"
-          max="100"
-          value={project.progress}
-          onChange={(e) => onSubmit({ ...project, progress: parseInt(e.target.value) })}
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium">心动指数 (1-5)</label>
-        <Select
-          value={project.excitement.toString()}
-          onValueChange={(value) => onSubmit({ ...project, excitement: parseInt(value) })}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {[1, 2, 3, 4, 5].map(n => (
-              <SelectItem key={n} value={n.toString()}>
-                {n}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <label className="text-sm font-medium">难度 (1-5)</label>
-        <Select
-          value={project.difficulty.toString()}
-          onValueChange={(value) => onSubmit({ ...project, difficulty: parseInt(value) })}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {[1, 2, 3, 4, 5].map(n => (
-              <SelectItem key={n} value={n.toString()}>
-                {n}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <label className="text-sm font-medium">状态</label>
-        <Select
-          value={project.status}
-          onValueChange={(value) => onSubmit({ ...project, status: value })}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {["未开始", "进行中", "已完成", "已暂停"].map(status => (
-              <SelectItem key={status} value={status}>
-                {status}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
 
   return (
     <div className="container mx-auto p-6 space-y-6">

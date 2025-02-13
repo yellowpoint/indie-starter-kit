@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, ChevronRight, MoreVertical } from "lucide-react";
+import { Plus, Trash2, ChevronRight, MoreVertical, Pencil } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { featureStorage, taskStorage, projectStorage } from "@/lib/storage";
 import { toast } from "sonner";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 // 提取 PlanContent 组件
 function PlanContent({ params }) {
@@ -29,6 +34,8 @@ function PlanContent({ params }) {
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [newSubTask, setNewSubTask] = useState("");
   const [subTasks, setSubTasks] = useState({});
+  const [editingFeatureId, setEditingFeatureId] = useState(null);
+  const [deleteFeaturePopoverOpen, setDeleteFeaturePopoverOpen] = useState({});
 
   // 加载项目数据
   useEffect(() => {
@@ -136,11 +143,16 @@ function PlanContent({ params }) {
   };
 
   const deleteTask = async (featureId, taskId) => {
-    const updatedTasks = subTasks[featureId].filter(task =>
-      task.id !== taskId && task.parentId !== taskId
-    );
-    await saveTasks(featureId, updatedTasks);
-    toast.success("任务删除成功");
+    try {
+      const updatedTasks = subTasks[featureId].filter(task =>
+        task.id !== taskId && task.parentId !== taskId
+      );
+      await saveTasks(featureId, updatedTasks);
+      toast.success("任务删除成功");
+    } catch (error) {
+      console.error("删除任务失败:", error);
+      toast.error("删除任务失败");
+    }
   };
 
   const updateTaskTitle = async (featureId, taskId, newTitle) => {
@@ -161,141 +173,237 @@ function PlanContent({ params }) {
     setSelectedFeature({ ...feature, description });
   };
 
+  // 修改删除功能的函数
+  const deleteFeature = async (featureId) => {
+    const updatedFeatures = features.filter(f => f.id !== featureId);
+    await saveFeatures(updatedFeatures);
+    if (selectedFeature?.id === featureId) {
+      setSelectedFeature(null);
+    }
+    const newSubTasks = { ...subTasks };
+    delete newSubTasks[featureId];
+    setSubTasks(newSubTasks);
+    toast.success("功能删除成功");
+  };
+
+  // 添加更新功能标题的函数
+  const updateFeatureTitle = async (featureId, newTitle) => {
+    const updatedFeatures = features.map(f =>
+      f.id === featureId ? { ...f, title: newTitle } : f
+    );
+    await saveFeatures(updatedFeatures);
+    if (selectedFeature?.id === featureId) {
+      setSelectedFeature({ ...selectedFeature, title: newTitle });
+    }
+  };
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">功能规划</h1>
-          {project && (
-            <p className="text-muted-foreground">
-              项目：{project.name}
-            </p>
-          )}
-        </div>
-        <Button variant="outline" onClick={() => router.push("/indie/projects")}>
-          返回项目列表
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-[300px_1fr] gap-6">
-        {/* 左侧功能列表 */}
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              value={newFeature}
-              onChange={(e) => setNewFeature(e.target.value)}
-              placeholder="添加新功能..."
-              onKeyPress={(e) => e.key === 'Enter' && addFeature()}
-            />
-            <Button onClick={addFeature}>
-              <Plus className="h-4 w-4" />
-            </Button>
+    <>
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">功能规划</h1>
+            {project && (
+              <p className="text-muted-foreground">
+                项目：{project.name}
+              </p>
+            )}
           </div>
-
-          <div className="space-y-2">
-            {features.map((feature) => (
-              <Card
-                key={feature.id}
-                className={`p-4 cursor-pointer ${selectedFeature?.id === feature.id ? "border-primary" : ""}`}
-                onClick={() => setSelectedFeature(feature)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={feature.completed}
-                      onCheckedChange={async (checked) => {
-                        const updatedFeatures = features.map(f =>
-                          f.id === feature.id ? { ...f, completed: checked } : f
-                        );
-                        await saveFeatures(updatedFeatures);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <span className={feature.completed ? "line-through text-muted-foreground" : ""}>
-                      {feature.title}
-                    </span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {subTasks[feature.id]?.filter(t => t.completed).length || 0}/
-                    {subTasks[feature.id]?.length || 0}
-                  </span>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <Button variant="outline" onClick={() => router.push("/indie/projects")}>
+            返回项目列表
+          </Button>
         </div>
 
-        {/* 右侧子任务详情 */}
-        {selectedFeature && (
-          <Card className="p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">{selectedFeature.title}</h2>
-                <Button variant="outline" size="sm" onClick={() => setSelectedFeature(null)}>
-                  关闭
-                </Button>
-              </div>
-
-              <Textarea
-                placeholder="添加功能描述..."
-                value={selectedFeature.description}
-                onChange={(e) => updateFeatureDescription(selectedFeature, e.target.value)}
-                className="min-h-[100px]"
+        <div className="grid grid-cols-[300px_1fr] gap-6">
+          {/* 左侧功能列表 */}
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                value={newFeature}
+                onChange={(e) => setNewFeature(e.target.value)}
+                placeholder="添加新功能..."
+                onKeyPress={(e) => e.key === 'Enter' && addFeature()}
               />
+              <Button onClick={addFeature}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
 
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    value={newSubTask}
-                    onChange={(e) => setNewSubTask(e.target.value)}
-                    placeholder="添加新任务..."
-                    onKeyPress={(e) => e.key === 'Enter' && addSubTask(selectedFeature.id)}
-                  />
-                  <Button onClick={() => addSubTask(selectedFeature.id)}>
-                    <Plus className="h-4 w-4" />
+            <div className="space-y-2">
+              {features.map((feature) => (
+                <Card
+                  key={feature.id}
+                  className={`p-4 cursor-pointer ${selectedFeature?.id === feature.id ? "border-primary" : ""}`}
+                  onClick={() => setSelectedFeature(feature)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 flex-1">
+                      <Checkbox
+                        checked={feature.completed}
+                        onCheckedChange={async (checked) => {
+                          const updatedFeatures = features.map(f =>
+                            f.id === feature.id ? { ...f, completed: checked } : f
+                          );
+                          await saveFeatures(updatedFeatures);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      {editingFeatureId === feature.id ? (
+                        <Input
+                          value={feature.title}
+                          onChange={(e) => updateFeatureTitle(feature.id, e.target.value)}
+                          className={`border-none ${feature.completed ? "line-through text-muted-foreground" : ""}`}
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                          onBlur={() => setEditingFeatureId(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setEditingFeatureId(null);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className={feature.completed ? "line-through text-muted-foreground" : ""}>
+                          {feature.title}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-xs text-muted-foreground">
+                        {subTasks[feature.id]?.filter(t => t.completed).length || 0}/
+                        {subTasks[feature.id]?.length || 0}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingFeatureId(feature.id)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Popover
+                        open={deleteFeaturePopoverOpen[feature.id]}
+                        onOpenChange={(open) => setDeleteFeaturePopoverOpen(prev => ({
+                          ...prev,
+                          [feature.id]: open
+                        }))}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-60">
+                          <div className="space-y-4">
+                            <div className="font-medium">确认删除功能？</div>
+                            <div className="text-sm text-muted-foreground">
+                              此操作将删除该功能及其所有子任务，且不可恢复。
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setDeleteFeaturePopoverOpen(prev => ({
+                                  ...prev,
+                                  [feature.id]: false
+                                }))}
+                              >
+                                取消
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  deleteFeature(feature.id);
+                                  setDeleteFeaturePopoverOpen(prev => ({
+                                    ...prev,
+                                    [feature.id]: false
+                                  }));
+                                }}
+                              >
+                                确认删除
+                              </Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* 右侧子任务详情 */}
+          {selectedFeature && (
+            <Card className="p-6">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">{selectedFeature.title}</h2>
+                  <Button variant="outline" size="sm" onClick={() => setSelectedFeature(null)}>
+                    关闭
                   </Button>
                 </div>
 
-                <div className="space-y-2">
-                  {(subTasks[selectedFeature.id] || []).map((task) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center gap-2"
-                      style={{ marginLeft: `${task.level * 24}px` }}
-                    >
-                      <Checkbox
-                        checked={task.completed}
-                        onCheckedChange={() => toggleTaskComplete(selectedFeature.id, task.id)}
-                      />
-                      <Input
-                        value={task.title}
-                        onChange={(e) => updateTaskTitle(selectedFeature.id, task.id, e.target.value)}
-                        className={task.completed ? "line-through text-muted-foreground" : ""}
-                      />
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => addSubSubTask(selectedFeature.id, task.id)}>
-                            添加子任务
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => deleteTask(selectedFeature.id, task.id)}>
-                            删除任务
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  ))}
+                <Textarea
+                  placeholder="添加功能描述..."
+                  value={selectedFeature.description}
+                  onChange={(e) => updateFeatureDescription(selectedFeature, e.target.value)}
+                  className="min-h-[100px]"
+                />
+
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      value={newSubTask}
+                      onChange={(e) => setNewSubTask(e.target.value)}
+                      placeholder="添加新任务..."
+                      onKeyPress={(e) => e.key === 'Enter' && addSubTask(selectedFeature.id)}
+                    />
+                    <Button onClick={() => addSubTask(selectedFeature.id)}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {(subTasks[selectedFeature.id] || []).map((task) => (
+                      <div
+                        key={task.id}
+                        className="flex items-center gap-2"
+                        style={{ marginLeft: `${task.level * 24}px` }}
+                      >
+                        <Checkbox
+                          checked={task.completed}
+                          onCheckedChange={() => toggleTaskComplete(selectedFeature.id, task.id)}
+                        />
+                        <Input
+                          value={task.title}
+                          onChange={(e) => updateTaskTitle(selectedFeature.id, task.id, e.target.value)}
+                          className={task.completed ? "line-through text-muted-foreground" : ""}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => addSubSubTask(selectedFeature.id, task.id)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTask(selectedFeature.id, task.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
-        )}
-      </div>
-    </div>
+            </Card>
+          )}
+        </div>
+      </div >
+    </>
   );
 }
 
