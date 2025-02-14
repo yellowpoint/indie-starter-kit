@@ -42,6 +42,22 @@ import {
 } from "@/components/ui/popover";
 import debounce from "lodash/debounce";
 import Link from "next/link";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // 添加自定义防抖 hook
 function useDebounce(callback, delay = 500) {
@@ -101,6 +117,126 @@ const tasks = [
     ]
   }
 ];
+
+// 修改可排序的功能卡片组件
+function SortableFeatureCard({
+  feature,
+  onSelect,
+  selected,
+  onEdit,
+  onDelete,
+  subTasks,
+  editingFeatureId,
+  updateFeatureTitle,
+  deleteFeaturePopoverOpen,
+  setDeleteFeaturePopoverOpen,
+  onToggleComplete
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: feature.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`p-4 cursor-pointer ${selected ? "border-primary" : ""}`}
+      onClick={() => onSelect(feature)}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 flex-1">
+          <div {...attributes} {...listeners} className="cursor-grab">
+            <MoreVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <Checkbox
+            checked={feature.completed}
+            onCheckedChange={(checked) => onToggleComplete(feature.id, checked)}
+            onClick={(e) => e.stopPropagation()}
+          />
+          {editingFeatureId === feature.id ? (
+            <Input
+              value={feature.title}
+              onChange={(e) => updateFeatureTitle(feature.id, e.target.value)}
+              className={`border-none ${feature.completed ? "line-through text-muted-foreground" : ""}`}
+              onClick={(e) => e.stopPropagation()}
+              autoFocus
+              onBlur={() => onEdit(null)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  onEdit(null);
+                }
+              }}
+            />
+          ) : (
+            <span className={feature.completed ? "line-through text-muted-foreground" : ""}>
+              {feature.title}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <span className="text-xs text-muted-foreground">
+            {subTasks?.filter(t => t.completed).length || 0}/
+            {subTasks?.length || 0}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => onEdit(feature.id)}
+          >
+            <Pencil className="h-3 w-3" />
+          </Button>
+          <Popover
+            open={deleteFeaturePopoverOpen[feature.id]}
+            onOpenChange={(open) => setDeleteFeaturePopoverOpen(prev => ({
+              ...prev,
+              [feature.id]: open
+            }))}
+          >
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <Trash2 className="h-3 w-3 text-destructive" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-60">
+              <div className="space-y-4">
+                <div className="font-medium">确认删除功能？</div>
+                <div className="text-sm text-muted-foreground">
+                  此操作将删除该功能及其所有子任务，且不可恢复。
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDelete(false)}
+                  >
+                    取消
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => onDelete(true)}
+                  >
+                    确认删除
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 // 提取 PlanContent 组件
 function PlanContent({ params }) {
@@ -395,30 +531,52 @@ function PlanContent({ params }) {
 
   const generateFeatures = () => {
     try {
-      // 检查必要的输入是否存在
-      if (!project?.name || !project?.description || !project?.keyFeatures ||
-        !userFlow.targetUsers || scenarios.length === 0) {
-        toast.error("请先完善项目信息和用户信息");
-        return;
-      }
+      // 收集可用的信息
+      const availableInfo = {
+        projectName: project?.name,
+        projectDesc: project?.description,
+        keyFeatures: project?.keyFeatures,
+        targetUsers: userFlow.targetUsers,
+        scenarios: scenarios.length > 0 ? scenarios : null
+      };
+
+      // 统计已有信息
+      const availableInfoList = Object.entries(availableInfo)
+        .filter(([_, value]) => value)
+        .map(([key, _]) => {
+          switch (key) {
+            case 'projectName': return '项目名称';
+            case 'projectDesc': return '项目描述';
+            case 'keyFeatures': return '核心特性';
+            case 'targetUsers': return '目标用户';
+            case 'scenarios': return '使用场景';
+            default: return key;
+          }
+        });
+
+      // 提示使用了哪些信息
+      toast.info(
+        `基于${availableInfoList.join('、')}生成功能建议` +
+        (availableInfoList.length < 5 ? '\n补充更多信息可获得更准确的建议' : '')
+      );
 
       // 模拟 AI 分析并生成功能点
       const mockAIFeatures = [
         {
           id: Date.now() + Math.random(),
           title: "用户注册与登录系统",
-          description: `基于项目（${project.name}）和目标用户（${userFlow.targetUsers.slice(0, 20)}...）的需求，
-            需要简单直观的账号系统。`,
+          description: `基于${project?.name ? `项目(${project.name})` : '项目需求'}${userFlow.targetUsers ? `和目标用户(${userFlow.targetUsers.slice(0, 20)}...)` : ''
+            }，建议添加账号系统。`,
           completed: false
         },
         {
           id: Date.now() + Math.random(),
           title: "个性化推荐功能",
-          description: `根据用户场景（${scenarios[0]?.content.slice(0, 20)}...）,
-            提供智能推荐。`,
+          description: `${scenarios.length > 0
+            ? `根据用户场景(${scenarios[0]?.content.slice(0, 20)}...)，`
+            : ''}提供智能推荐功能。`,
           completed: false
-        },
-        // ... 其他生成的功能
+        }
       ];
 
       // 过滤掉已存在的功能
@@ -433,6 +591,7 @@ function PlanContent({ params }) {
         return;
       }
 
+      // 追加新功能到现有列表
       const updatedFeatures = [...features, ...newFeatures];
       setFeatures(updatedFeatures);
       debouncedSaveToDb('features', updatedFeatures);
@@ -446,6 +605,40 @@ function PlanContent({ params }) {
   const handleCopyCommand = (command) => {
     navigator.clipboard.writeText(command);
     toast.success("命令已复制到剪贴板");
+  };
+
+  // 添加传感器
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // 添加拖拽结束处理函数
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      setFeatures((items) => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
+
+        const newFeatures = arrayMove(items, oldIndex, newIndex);
+        // 保存新的排序到数据库
+        debouncedSaveToDb('features', newFeatures);
+        return newFeatures;
+      });
+    }
+  };
+
+  // 添加新的 toggleFeatureComplete 函数
+  const toggleFeatureComplete = (featureId, checked) => {
+    const updatedFeatures = features.map(f =>
+      f.id === featureId ? { ...f, completed: checked } : f
+    );
+    setFeatures(updatedFeatures);
+    debouncedSaveToDb('features', updatedFeatures);
   };
 
   return (
@@ -500,7 +693,7 @@ function PlanContent({ params }) {
                 <Textarea
                   value={project?.keyFeatures || ""}
                   onChange={(e) => updateProject({ keyFeatures: e.target.value })}
-                  placeholder="列出产品的核心特性，每行一个..."
+                  placeholder="列出产品的核心特性"
                   className="min-h-[100px]"
                 />
               </div>
@@ -572,7 +765,6 @@ function PlanContent({ params }) {
 
         <TabsContent value="features">
           <div className="grid grid-cols-[300px_1fr] gap-6">
-            {/* 左侧功能列表 */}
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2">
@@ -597,111 +789,45 @@ function PlanContent({ params }) {
                 </Button>
               </div>
 
-              <div className="space-y-2">
-                {features.map((feature) => (
-                  <Card
-                    key={feature.id}
-                    className={`p-4 cursor-pointer ${selectedFeature?.id === feature.id ? "border-primary" : ""}`}
-                    onClick={() => setSelectedFeature(feature)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 flex-1">
-                        <Checkbox
-                          checked={feature.completed}
-                          onCheckedChange={async (checked) => {
-                            const updatedFeatures = features.map(f =>
-                              f.id === feature.id ? { ...f, completed: checked } : f
-                            );
-                            setFeatures(updatedFeatures);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        {editingFeatureId === feature.id ? (
-                          <Input
-                            value={feature.title}
-                            onChange={(e) => updateFeatureTitle(feature.id, e.target.value)}
-                            className={`border-none ${feature.completed ? "line-through text-muted-foreground" : ""}`}
-                            onClick={(e) => e.stopPropagation()}
-                            autoFocus
-                            onBlur={() => setEditingFeatureId(null)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                setEditingFeatureId(null);
-                              }
-                            }}
-                          />
-                        ) : (
-                          <span className={feature.completed ? "line-through text-muted-foreground" : ""}>
-                            {feature.title}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <span className="text-xs text-muted-foreground">
-                          {subTasks[feature.id]?.filter(t => t.completed).length || 0}/
-                          {subTasks[feature.id]?.length || 0}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingFeatureId(feature.id)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Popover
-                          open={deleteFeaturePopoverOpen[feature.id]}
-                          onOpenChange={(open) => setDeleteFeaturePopoverOpen(prev => ({
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={features.map(f => f.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2">
+                    {features.map((feature) => (
+                      <SortableFeatureCard
+                        key={feature.id}
+                        feature={feature}
+                        onSelect={setSelectedFeature}
+                        selected={selectedFeature?.id === feature.id}
+                        onEdit={setEditingFeatureId}
+                        editingFeatureId={editingFeatureId}
+                        updateFeatureTitle={updateFeatureTitle}
+                        onDelete={(confirmed) => {
+                          if (confirmed) {
+                            deleteFeature(feature.id);
+                          }
+                          setDeleteFeaturePopoverOpen(prev => ({
                             ...prev,
-                            [feature.id]: open
-                          }))}
-                        >
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-60">
-                            <div className="space-y-4">
-                              <div className="font-medium">确认删除功能？</div>
-                              <div className="text-sm text-muted-foreground">
-                                此操作将删除该功能及其所有子任务，且不可恢复。
-                              </div>
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setDeleteFeaturePopoverOpen(prev => ({
-                                    ...prev,
-                                    [feature.id]: false
-                                  }))}
-                                >
-                                  取消
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => {
-                                    deleteFeature(feature.id);
-                                    setDeleteFeaturePopoverOpen(prev => ({
-                                      ...prev,
-                                      [feature.id]: false
-                                    }));
-                                  }}
-                                >
-                                  确认删除
-                                </Button>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+                            [feature.id]: false
+                          }));
+                        }}
+                        subTasks={subTasks[feature.id]}
+                        deleteFeaturePopoverOpen={deleteFeaturePopoverOpen}
+                        setDeleteFeaturePopoverOpen={setDeleteFeaturePopoverOpen}
+                        onToggleComplete={toggleFeatureComplete}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
 
-            {/* 右侧子任务详情 */}
             {selectedFeature && (
               <Card className="p-6">
                 <div className="space-y-6">

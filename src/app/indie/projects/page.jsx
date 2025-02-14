@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { featureStorage } from "@/lib/storage";
+import { taskStorage } from "@/lib/storage";
 
 const ProjectForm = ({ project, onSubmit }) => {
   const [formData, setFormData] = useState(project);
@@ -132,6 +134,38 @@ const ProjectForm = ({ project, onSubmit }) => {
   );
 };
 
+const calculateProjectProgress = async (projectId) => {
+  try {
+    // 获取项目的所有功能
+    const features = await featureStorage.getAll(projectId);
+    if (!features || features.length === 0) return 0;
+
+    let completedWeight = 0;
+    const totalFeatures = features.length;
+
+    // 遍历功能列表
+    for (const feature of features) {
+      if (feature.completed) {
+        // 如果功能已标记完成,直接计入整个权重
+        completedWeight += 1;
+      } else {
+        // 功能未完成时,才检查子任务完成情况
+        const tasks = await taskStorage.getAll(feature.id);
+        if (tasks && tasks.length > 0) {
+          const completedTasks = tasks.filter(task => task.completed).length;
+          completedWeight += (completedTasks / tasks.length);
+        }
+      }
+    }
+
+    // 计算总体进度百分比
+    return Math.round((completedWeight / totalFeatures) * 100);
+  } catch (error) {
+    console.error("计算项目进度失败:", error);
+    return 0;
+  }
+};
+
 export default function ProjectsPage() {
   const router = useRouter();
   const [projects, setProjects] = useState([]);
@@ -148,8 +182,22 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     const loadProjects = async () => {
-      const savedProjects = await projectStorage.getAll();
-      setProjects(savedProjects);
+      try {
+        const savedProjects = await projectStorage.getAll();
+
+        // 计算每个项目的实际进度
+        const projectsWithProgress = await Promise.all(
+          savedProjects.map(async (project) => {
+            const progress = await calculateProjectProgress(project.id);
+            return { ...project, progress };
+          })
+        );
+
+        setProjects(projectsWithProgress);
+      } catch (error) {
+        console.error("加载项目失败:", error);
+        toast.error("加载项目失败");
+      }
     };
     loadProjects();
   }, []);
@@ -192,12 +240,23 @@ export default function ProjectsPage() {
   };
 
   const handleUpdateProject = async (id, updates) => {
-    const newProjects = projects.map(project =>
-      project.id === id ? { ...project, ...updates } : project
-    );
-    await saveProjects(newProjects);
-    setEditingProject(null);
-    toast.success("项目更新成功");
+    try {
+      // 如果更新不包含进度,则重新计算
+      if (!updates.hasOwnProperty('progress')) {
+        const progress = await calculateProjectProgress(id);
+        updates = { ...updates, progress };
+      }
+
+      const newProjects = projects.map(project =>
+        project.id === id ? { ...project, ...updates } : project
+      );
+      await saveProjects(newProjects);
+      setEditingProject(null);
+      toast.success("项目更新成功");
+    } catch (error) {
+      console.error("更新项目失败:", error);
+      toast.error("更新项目失败");
+    }
   };
 
   const handleProjectClick = async (project) => {
@@ -300,7 +359,12 @@ export default function ProjectsPage() {
                     <TableCell>{project.name}</TableCell>
                     <TableCell>{project.startDate}</TableCell>
                     <TableCell>
-                      <Progress value={project.progress} className="w-[100px]" />
+                      <div className="flex items-center gap-2">
+                        <Progress value={project.progress} className="w-[100px]" />
+                        <span className="text-sm text-muted-foreground">
+                          {project.progress}%
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>{project.excitement}/5</TableCell>
                     <TableCell>{project.difficulty}/5</TableCell>
